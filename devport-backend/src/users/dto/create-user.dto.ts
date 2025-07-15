@@ -1,19 +1,27 @@
-import { IsString, IsEmail, IsNotEmpty, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, MinLength, MaxLength, IsStrongPassword, minLength } from 'class-validator';
 
 export class CreateUserDto {
-	@IsEmail()
+	@IsEmail({}, { message: 'Invalid email address'})
 	@IsNotEmpty()
 	email: string;
 
 	@IsString()
 	@IsNotEmpty()
-	@MinLength(4)
-	@MaxLength(25)
+	@MinLength(4, { message: 'Display name must contain between 4 and 25 characters' })
+	@MaxLength(25, { message: 'Display name must contain between 4 and 25 characters' })
 	display_name: string;
 
 	@IsString()
+	@IsStrongPassword({
+		minLength: 6,
+		minLowercase: 1,
+		minUppercase: 1,
+		minNumbers: 1,
+		minSymbols: 1,
+	}, 
+	{ 
+		message: 'Password not strong enough' 
+	})
 	@IsNotEmpty()
-	@MinLength(6)
-	@MaxLength(30)
 	password: string;
 }
