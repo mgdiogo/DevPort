@@ -1,9 +1,10 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { PrismaService } from 'prisma/prisma.service';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as cookieParser from 'cookie-parser';
+import { PrismaService } from 'prisma/prisma.service';
+import { AppModule } from './app.module';
 
 const PORT = process.env.JS_PORT!;
 
@@ -21,6 +22,7 @@ async function bootstrap() {
 		.build();
 	const document = SwaggerModule.createDocument(app, config);
 	SwaggerModule.setup('api/docs', app, document);
+	app.use(cookieParser());
 	await app.listen(PORT);
 }
 bootstrap();

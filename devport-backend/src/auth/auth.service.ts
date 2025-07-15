@@ -1,32 +1,25 @@
-import { Injectable, ConflictException } from "@nestjs/common";
+import { Injectable, ConflictException, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { User } from "@prisma/client";
 import { PrismaService } from "prisma/prisma.service";
+import { UsersService } from '../users/users.service';
 import { LoginUserDto } from "./dto/login-user.dto";
 import { CreateUserDto } from "./dto/create-user.dto";
-import { UnauthorizedException } from "@nestjs/common";
-import { compare } from 'bcrypt';
 import { hashPassword } from "./utils/bcrypt";
-import { User } from "@prisma/client";
+import { compare } from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-	constructor(private prisma: PrismaService) { }
+	constructor(private prisma: PrismaService, private usersService: UsersService, private jwtService: JwtService) { }
 
-	async loginUser(loginUserDto: LoginUserDto): Promise<any> {
+	async loginUser(loginUserDto: LoginUserDto): Promise<{ token: string }> {
 		const { email, password } = loginUserDto;
-		const user = await this.prisma.user.findUnique({
-			where: {
-				email
-			}
-		})
 
-		if (!user)
-			throw new UnauthorizedException('Invalid credentials');
+		const user = await this.validateUserLogin(email, password);
 
-		const validatePassword = await compare(password, user.password);
-		if (!validatePassword)
-			throw new UnauthorizedException('Invalid credentials');
-
-		return { message: 'Login successful' }
+		const jwtPayload = { email: email, id: user.id };
+		const token = this.jwtService.sign(jwtPayload);
+		return ({ token });
 	}
 
 	async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -39,6 +32,19 @@ export class AuthService {
 		const password = await hashPassword(createUserDto.password);
 		const createUser = { ...createUserDto, password };
 		return this.prisma.user.create({ data: createUser });
+	}
+
+	async validateUserLogin(email: string, password: string): Promise<User> {
+		const user = await this.usersService.findUserByEmail(email);
+
+		if (!user)
+			throw new UnauthorizedException('Invalid credentials');
+
+		const validatePassword = await compare(password, user.password);
+		if (!validatePassword)
+			throw new UnauthorizedException('Invalid credentials');
+
+		return (user);
 	}
 
 	async emailTaken(email: string): Promise<Boolean> {
