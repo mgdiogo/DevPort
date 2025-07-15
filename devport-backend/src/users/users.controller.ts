@@ -11,7 +11,7 @@ export class UsersController {
 	async register(@Body() createUserDto: CreateUserDto) {
 		const user = await this.usersService.createUser(createUserDto);
 		const { password, ...createUser } = user;
-		
+
 		return (createUser);
 	}
 }

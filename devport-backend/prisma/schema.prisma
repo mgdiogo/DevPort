@@ -11,7 +11,7 @@ datasource db {
 }
 
 model User {
-	id           Int @id  @default(autoincrement())
+	id           Int      @id  @default(autoincrement())
 	email        String   @unique
 	password     String
 	display_name String   @unique
@@ -20,28 +20,28 @@ model User {
 }
 
 model Project {
-	id        Int        @id @default(autoincrement())
+	id        Int         @id @default(autoincrement())
 	name      String
 	apiKeys   ApiKey[]
-	owner     User       @relation(fields: [ownerId], references: [id])
+	owner     User        @relation(fields: [ownerId], references: [id])
 	ownerId   Int
 	usageLogs UsageLog[]
-	createdAt DateTime   @default(now())
+	createdAt DateTime    @default(now())
 }
 
 model ApiKey {
-	id        Int      @id @default(autoincrement())
-	hashedKey String   @unique
-	project   Project  @relation(fields: [projectId], references: [id])
+	id        Int         @id @default(autoincrement())
+	hashedKey String      @unique
+	project   Project     @relation(fields: [projectId], references: [id])
 	projectId Int
-	createdAt DateTime @default(now())
+	createdAt DateTime    @default(now())
 }
 
 model UsageLog {
-	id         Int      @id @default(autoincrement())
-	project    Project  @relation(fields: [projectId], references: [id])
+	id         Int        @id @default(autoincrement())
+	project    Project    @relation(fields: [projectId], references: [id])
 	projectId  Int
 	endpoint   String
 	statusCode Int
-	createdAt  DateTime @default(now())
+	createdAt  DateTime   @default(now())
 }
