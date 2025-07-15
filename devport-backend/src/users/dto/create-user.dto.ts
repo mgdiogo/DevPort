@@ -3,7 +3,7 @@ import { Transform } from 'class-transformer';
 import { IsString, IsEmail, IsNotEmpty, MinLength, MaxLength, IsStrongPassword } from 'class-validator';
 
 export class CreateUserDto {
-	@ApiProperty({ example: 'user@email.com' })
+	@ApiProperty({ example: 'user@mail.com' })
 	@IsEmail({}, { message: 'Invalid email address'})
 	@IsNotEmpty()
 	@Transform(({ value }) => value.trim().toLowerCase())
