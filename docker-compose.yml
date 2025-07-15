@@ -12,6 +12,8 @@ services:
       - redis
     env_file:
       - .env
+    networks:
+      - devport
 
   db:
     image: postgres:15
@@ -23,12 +25,20 @@ services:
       - pgdata:/var/lib/postgresql/data
     env_file:
       - .env
+    networks:
+      - devport
 
   redis:
     image: redis:7
     container_name: devport-redis
     ports:
       - "6379:6379"
+    networks:
+      - devport
 
 volumes:
   pgdata:
+
+networks:
+  devport:
+    driver: bridge
