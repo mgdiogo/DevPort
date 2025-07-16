@@ -3,25 +3,14 @@ import { JwtService } from "@nestjs/jwt";
 import { User } from "@prisma/client";
 import { PrismaService } from "prisma/prisma.service";
 import { UsersService } from '../users/users.service';
-import { LoginUserDto } from "./dto/login-user.dto";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { hashPassword } from "./utils/bcrypt";
 import { compare } from 'bcrypt';
+import { SafeUser } from "src/types/user.types";
 
 @Injectable()
 export class AuthService {
 	constructor(private prisma: PrismaService, private usersService: UsersService, private jwtService: JwtService) { }
-
-	async loginUser(loginUserDto: LoginUserDto): Promise<{ token: string }> {
-		const { email, password } = loginUserDto;
-
-		const user = await this.validateUserLogin(email, password);
-
-		const jwtPayload = { email: email, id: user.id };
-		const token = this.jwtService.sign(jwtPayload);
-		return ({ token });
-	}
-
 	async createUser(createUserDto: CreateUserDto): Promise<User> {
 		if (await this.emailTaken(createUserDto.email))
 			throw new ConflictException('Email is already registered');
@@ -34,17 +23,24 @@ export class AuthService {
 		return this.prisma.user.create({ data: createUser });
 	}
 
-	async validateUserLogin(email: string, password: string): Promise<User> {
+	async validateUserLogin(email: string, pass: string): Promise<SafeUser> {
 		const user = await this.usersService.findUserByEmail(email);
 
 		if (!user)
 			throw new UnauthorizedException('Invalid credentials');
 
-		const validatePassword = await compare(password, user.password);
+		const validatePassword = await compare(pass, user.password);
 		if (!validatePassword)
 			throw new UnauthorizedException('Invalid credentials');
 
-		return (user);
+		const { password, createdAt, ...safeUser } = user;
+		return (safeUser);
+	}
+
+	generateJwt(user: SafeUser) {
+		const payload = { id: user.id, email: user.email };
+		const token = this.jwtService.sign(payload);
+		return { token };
 	}
 
 	async emailTaken(email: string): Promise<Boolean> {
