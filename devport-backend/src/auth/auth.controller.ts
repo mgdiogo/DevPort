@@ -1,4 +1,4 @@
-import { Controller, Get, Req, Res, Post, Body, HttpCode, UseGuards } from "@nestjs/common";
+import { Controller, Get, Req, Res, Post, Body, HttpCode, UseGuards, UnauthorizedException } from "@nestjs/common";
 import { Response, Request } from 'express';
 import { AuthService } from "./auth.service";
 import { CreateUserDto } from "./dto/create-user.dto";
@@ -20,17 +20,17 @@ export class AuthController {
 		@Res({ passthrough: true }) res: Response
 	) {
 		const user = req.user as SafeUser;
+		const { token, refreshToken} = this.authService.generateJwt(user);
 
-		const { token } = this.authService.generateJwt(user);
-		res.cookie('access_token', token, {
+		res.cookie('refresh_token', refreshToken, {
 			httpOnly: true,
 			secure: false,
 			sameSite: 'strict',
 			path: '/',
-			maxAge: 3600 * 1000
+			maxAge: 7 * 24 * 60 * 60 * 1000
 		});
 
-		return ({ message: 'Login successful' });
+		return ({access_token: token, message: 'Login successful' });
 	}
 
 	@ApiOperation({ summary: 'Register a new user', description: 'Creates a new user account with a unique email and display name. Returns the user data without the password.' })
@@ -42,9 +42,31 @@ export class AuthController {
 		return ({ createUser, message: 'Registration successful' });
 	}
 
+	@Post('refresh')
+	@HttpCode(200)
+	refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+		const refreshToken = req.cookies['refresh_token'];
+
+		if (!refreshToken)
+			throw new UnauthorizedException('Missing refresh token');
+
+		const payload = this.authService.verifyRefreshToken(refreshToken);
+		const { token, refreshToken: newRefreshToken} = this.authService.generateJwt(payload);
+
+		res.cookie('refresh_token', newRefreshToken, {
+			httpOnly: true,
+			secure: false,
+			sameSite: 'strict',
+			path: '/',
+			maxAge: 7 * 24 * 60 * 60 * 1000 // 7d
+		});
+
+		return ({ token });
+	}
+
 	@Get('status')
 	@UseGuards(JwtAuthGuard)
-	status(@Req() req: Request){
+	status(@Req() req: Request) {
 		return (req.user);
 	}
 }

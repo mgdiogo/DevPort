@@ -4,6 +4,7 @@ import { User } from "@prisma/client";
 import { PrismaService } from "prisma/prisma.service";
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from "./dto/create-user.dto";
+import { jwtPayload } from "./strategies/jwt.strategy";
 import { hashPassword } from "./utils/bcrypt";
 import { compare } from 'bcrypt';
 import { SafeUser } from "src/types/user.types";
@@ -37,10 +38,27 @@ export class AuthService {
 		return (safeUser);
 	}
 
-	generateJwt(user: SafeUser) {
-		const payload = { id: user.id, email: user.email };
-		const token = this.jwtService.sign(payload);
-		return { token };
+	verifyRefreshToken(token: string): jwtPayload {
+		try {
+			const jwToken = this.jwtService.verify(token, { secret: process.env.JWT_SECRET! });
+
+			return (jwToken);
+		} catch (err) {
+			throw new UnauthorizedException('Invalid or expired refresh token');
+		}
+	}
+
+	generateJwt(payload: jwtPayload): { token: string, refreshToken: string } {
+		try {
+			const { id, email } = payload;
+			const token = this.jwtService.sign({id, email});
+
+			const refreshToken = this.jwtService.sign({id, email},
+				{ secret: process.env.JWT_SECRET!, expiresIn: '7d' });
+			return { token, refreshToken };
+		} catch {
+			throw new Error('Server failed to generate tokens');
+		}
 	}
 
 	async emailTaken(email: string): Promise<Boolean> {
