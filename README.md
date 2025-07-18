@@ -8,4 +8,4 @@ While building DevPort i will be simulating a SaaS API service with user authent
 
 # What is DevPort?
 
-DevPort is a platform where developers can register, create personal API projects, manage API tokens and track usage.
+DevPort is a platform where developers can register, list projects and manage their API keys.
