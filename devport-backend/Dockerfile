@@ -3,13 +3,14 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN npm install && \
-    npm install bcrypt && \
+	npm install bcrypt && \
 	npm install passport && \
 	npm install passport-jwt && \ 
 	npm install passport-local && \
 	npm install @nestjs/jwt && \
 	npm install @nestjs/passport && \
-	npm install cookie-parser
+	npm install cookie-parser && \
+	npm install uuid
 
 COPY . .
 

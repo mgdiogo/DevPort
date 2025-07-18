@@ -5,7 +5,8 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { ApiOperation } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/common/guards/jwt.guard";
 import { LocalGuard } from "./guards/local.guard";
-import { SafeUser } from "src/types/user.types";
+import { RefreshGuard } from "./guards/refresh.guard";
+import { jwtPayload } from "./strategies/jwt.strategy";
 
 @Controller('auth')
 export class AuthController {
@@ -19,8 +20,8 @@ export class AuthController {
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response
 	) {
-		const user = req.user as SafeUser;
-		const { token, refreshToken} = this.authService.generateJwt(user);
+		const user = req.user as jwtPayload;
+		const { token, refreshToken } = this.authService.generateJwt(user);
 
 		res.cookie('refresh_token', refreshToken, {
 			httpOnly: true,
@@ -30,7 +31,7 @@ export class AuthController {
 			maxAge: 7 * 24 * 60 * 60 * 1000
 		});
 
-		return ({access_token: token, message: 'Login successful' });
+		return ({ access_token: token, message: 'Login successful' });
 	}
 
 	@ApiOperation({ summary: 'Register a new user', description: 'Creates a new user account with a unique email and display name. Returns the user data without the password.' })
@@ -43,20 +44,16 @@ export class AuthController {
 	}
 
 	@Post('refresh')
+	@UseGuards(RefreshGuard)
 	@HttpCode(200)
 	async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-		const refreshToken = req.cookies['refresh_token'];
+		const user = req.user as jwtPayload;
+		if (!user)
+			throw new UnauthorizedException('Missing user payload');
 
-		if (!refreshToken)
-			throw new UnauthorizedException('Missing refresh token');
+		const { token, refreshToken: newRefreshToken } = this.authService.generateJwt(user);
+		await this.authService.blacklistToken(req.cookies['refresh_token']);
 
-		if (await this.authService.isBlacklisted(refreshToken))
-			throw new UnauthorizedException('Token is blacklisted');
-
-		const payload = this.authService.verifyRefreshToken(refreshToken);
-		const { token, refreshToken: newRefreshToken} = this.authService.generateJwt(payload);
-
-		await this.authService.blacklistToken(refreshToken);
 		res.cookie('refresh_token', newRefreshToken, {
 			httpOnly: true,
 			secure: false,
@@ -81,15 +78,5 @@ export class AuthController {
 	@UseGuards(JwtAuthGuard)
 	status(@Req() req: Request) {
 		return (req.user);
-	}
-
-	@Post('blacklisted')
-	async getBlacklisted(@Body() body: { token?: string }) {
-		if (!body.token)
-			throw new BadRequestException('Token not sent in JSON Body');
-
-		const blacklisted = await this.authService.isBlacklisted(body.token);
-		
-		return ({ blacklisted });
 	}
 }

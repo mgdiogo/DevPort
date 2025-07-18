@@ -10,6 +10,7 @@ import { compare } from 'bcrypt';
 import { SafeUser } from "src/types/user.types";
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Redis } from 'ioredis';
+import { v4 as uuidv4 } from "uuid";
 
 
 @Injectable()
@@ -57,14 +58,15 @@ export class AuthService {
 		}
 	}
 
-	generateJwt(payload: jwtPayload): { token: string, refreshToken: string } {
+	generateJwt(payload: jwtPayload): { token: string, refreshToken: string, jti: string } {
 		try {
-			const { id, email } = payload;
-			const token = this.jwtService.sign({ id, email });
+			const jti = uuidv4();
+			const { id, display_name } = payload;
+			const token = this.jwtService.sign({ id, display_name, token_type: 'access' });
 
-			const refreshToken = this.jwtService.sign({ id, email },
+			const refreshToken = this.jwtService.sign({ id, display_name, jti, token_type: 'refresh' },
 				{ secret: process.env.JWT_SECRET!, expiresIn: '7d' });
-			return { token, refreshToken };
+			return { token, refreshToken, jti };
 		} catch {
 			throw new Error('Server failed to generate tokens');
 		}
@@ -91,21 +93,16 @@ export class AuthService {
 	}
 
 	async blacklistToken(token: string) {
-		const decoded = this.jwtService.decode(token);
-		const tokenExp = decoded.exp * 1000;
+		const decoded = this.jwtService.decode(token) as { jti?: string, exp?: number };
 
+		if (!decoded?.jti || !decoded?.exp)
+			throw new UnauthorizedException('Invalid token');
+
+		const tokenExp = decoded.exp * 1000;
 		const now = Date.now();
 		const ttl = tokenExp - now;
 
 		if (ttl > 0)
-			await this.redis.set(`bl:${token}`, 'blacklisted', 'PX', ttl);
-	}
-
-	async isBlacklisted(token: string): Promise<boolean> {
-		const blacklisted = await this.redis.get(`bl:${token}`);
-
-		if (blacklisted)
-			return true;
-		return false;
+			await this.redis.set(`bl:jti:${decoded.jti}`, 'blacklisted', 'PX', ttl);
 	}
 }
