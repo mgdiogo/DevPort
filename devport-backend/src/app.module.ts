@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { RedisModule } from '@nestjs-modules/ioredis';
 
 
 @Module({
@@ -11,6 +12,10 @@ import { AuthModule } from './auth/auth.module';
 		PrismaModule,
 		UsersModule,
 		AuthModule,
+		RedisModule.forRoot({
+			type: 'single',
+			url: process.env.REDIS_URL!
+		})
 	],
 	controllers: [AppController],
 	providers: [AppService],

@@ -8,10 +8,19 @@ import { jwtPayload } from "./strategies/jwt.strategy";
 import { hashPassword } from "./utils/bcrypt";
 import { compare } from 'bcrypt';
 import { SafeUser } from "src/types/user.types";
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Redis } from 'ioredis';
+
 
 @Injectable()
 export class AuthService {
-	constructor(private prisma: PrismaService, private usersService: UsersService, private jwtService: JwtService) { }
+	constructor(
+		private prisma: PrismaService,
+		private usersService: UsersService,
+		private jwtService: JwtService,
+		@InjectRedis() private readonly redis: Redis
+	) { }
+
 	async createUser(createUserDto: CreateUserDto): Promise<User> {
 		if (await this.emailTaken(createUserDto.email))
 			throw new ConflictException('Email is already registered');
@@ -51,9 +60,9 @@ export class AuthService {
 	generateJwt(payload: jwtPayload): { token: string, refreshToken: string } {
 		try {
 			const { id, email } = payload;
-			const token = this.jwtService.sign({id, email});
+			const token = this.jwtService.sign({ id, email });
 
-			const refreshToken = this.jwtService.sign({id, email},
+			const refreshToken = this.jwtService.sign({ id, email },
 				{ secret: process.env.JWT_SECRET!, expiresIn: '7d' });
 			return { token, refreshToken };
 		} catch {
@@ -79,5 +88,24 @@ export class AuthService {
 		})
 
 		return (!!nameExists);
+	}
+
+	async blacklistToken(token: string) {
+		const decoded = this.jwtService.decode(token);
+		const tokenExp = decoded.exp * 1000;
+
+		const now = Date.now();
+		const ttl = tokenExp - now;
+
+		if (ttl > 0)
+			await this.redis.set(`bl:${token}`, 'blacklisted', 'PX', ttl);
+	}
+
+	async isBlacklisted(token: string): Promise<boolean> {
+		const blacklisted = await this.redis.get(`bl:${token}`);
+
+		if (blacklisted)
+			return true;
+		return false;
 	}
 }
