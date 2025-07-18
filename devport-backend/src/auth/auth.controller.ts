@@ -7,6 +7,7 @@ import { JwtAuthGuard } from "src/common/guards/jwt.guard";
 import { LocalGuard } from "./guards/local.guard";
 import { RefreshGuard } from "./guards/refresh.guard";
 import { jwtPayload } from "./strategies/jwt.strategy";
+import { CurrentUser } from "src/common/decorators/current-user.decorator";
 
 @Controller('auth')
 export class AuthController {
@@ -46,8 +47,7 @@ export class AuthController {
 	@Post('refresh')
 	@UseGuards(RefreshGuard)
 	@HttpCode(200)
-	async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-		const user = req.user as jwtPayload;
+	async refresh(@CurrentUser() user: jwtPayload, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
 		if (!user)
 			throw new UnauthorizedException('Missing user payload');
 
@@ -76,7 +76,7 @@ export class AuthController {
 
 	@Get('status')
 	@UseGuards(JwtAuthGuard)
-	status(@Req() req: Request) {
-		return (req.user);
+	status(@CurrentUser() user: jwtPayload) {
+		return (user);
 	}
 }
