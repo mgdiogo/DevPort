@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, UnauthorizedException } from "@nestjs/common";
+import { Injectable, ConflictException, UnauthorizedException, InternalServerErrorException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { User } from "@prisma/client";
 import { PrismaService } from "prisma/prisma.service";
@@ -23,15 +23,21 @@ export class AuthService {
 	) { }
 
 	async createUser(createUserDto: CreateUserDto): Promise<User> {
-		if (await this.emailTaken(createUserDto.email))
-			throw new ConflictException('Email is already registered');
+		try {
+			if (await this.emailTaken(createUserDto.email))
+				throw new ConflictException('Email is already registered');
 
-		if (await this.displayNameTaken(createUserDto.display_name))
-			throw new ConflictException('Display name is already taken');
+			if (await this.displayNameTaken(createUserDto.display_name))
+				throw new ConflictException('Display name is already taken');
 
-		const password = await hashPassword(createUserDto.password);
-		const createUser = { ...createUserDto, password };
-		return this.prisma.user.create({ data: createUser });
+			const password = await hashPassword(createUserDto.password);
+			const createUser = { ...createUserDto, password };
+			return this.prisma.user.create({ data: createUser });
+
+		} catch (err) {
+			if (err instanceof ConflictException) throw err;
+			throw new InternalServerErrorException('Failed to create user: ' + err.message);
+		}
 	}
 
 	async validateUserLogin(email: string, pass: string): Promise<SafeUser> {
@@ -67,8 +73,8 @@ export class AuthService {
 			const refreshToken = this.jwtService.sign({ id, display_name, jti, token_type: 'refresh' },
 				{ secret: process.env.JWT_SECRET!, expiresIn: '7d' });
 			return { token, refreshToken, jti };
-		} catch {
-			throw new Error('Server failed to generate tokens');
+		} catch (err) {
+			throw new InternalServerErrorException('Server failed to generate tokens: ' + err.message);
 		}
 	}
 

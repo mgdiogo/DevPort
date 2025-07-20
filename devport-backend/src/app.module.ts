@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
+import { ProjectsModule } from './projects/projects.module';
 
 
 @Module({
@@ -15,7 +16,8 @@ import { RedisModule } from '@nestjs-modules/ioredis';
 		RedisModule.forRoot({
 			type: 'single',
 			url: process.env.REDIS_URL!
-		})
+		}),
+		ProjectsModule
 	],
 	controllers: [AppController],
 	providers: [AppService],
