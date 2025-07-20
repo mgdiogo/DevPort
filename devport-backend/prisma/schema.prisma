@@ -20,13 +20,14 @@ model User {
 }
 
 model Project {
-	id        Int         @id @default(autoincrement())
-	name      String
-	apiKeys   ApiKey[]
-	owner     User        @relation(fields: [ownerId], references: [id])
-	ownerId   Int
-	usageLogs UsageLog[]
-	createdAt DateTime    @default(now())
+	id          Int         @id @default(autoincrement())
+	name        String
+	description String
+	apiKeys     ApiKey[]
+	owner       User        @relation(fields: [ownerId], references: [id])
+	ownerId     Int
+	usageLogs   UsageLog[]
+	createdAt   DateTime    @default(now())
 }
 
 model ApiKey {
