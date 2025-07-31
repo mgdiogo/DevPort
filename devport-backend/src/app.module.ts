@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { ProjectsModule } from './projects/projects.module';
+import { ApikeysModule } from './apikeys/apikeys.module';
 
 
 @Module({
@@ -17,7 +18,8 @@ import { ProjectsModule } from './projects/projects.module';
 			type: 'single',
 			url: process.env.REDIS_URL!
 		}),
-		ProjectsModule
+		ProjectsModule,
+		ApikeysModule
 	],
 	controllers: [AppController],
 	providers: [AppService],
