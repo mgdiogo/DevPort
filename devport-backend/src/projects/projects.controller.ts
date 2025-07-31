@@ -1,6 +1,5 @@
-import { Controller, Get, Post, Req, Body, UseGuards, InternalServerErrorException, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Req, Body, UseGuards, HttpCode, Param } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
-import { Request } from 'express';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
 import { SafeUser } from 'src/types/user.types';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -17,6 +16,15 @@ export class ProjectsController {
 		const projects = await this.projectsSerivce.getUserProjectsById(user.id);
 
 		return { projects };
+	}
+
+	@Get('/:id')
+	@HttpCode(200)
+	@UseGuards(JwtAuthGuard)
+	async getProject(@Param('id') id: number) {
+		const project =  await this.projectsSerivce.getProjectById(id);
+
+		return project;
 	}
 
 	@Post()

@@ -7,7 +7,7 @@ import { Project } from "@prisma/client";
 export class ProjectsService {
 	constructor(private prisma: PrismaService) { }
 
-	async getUserProjectsById(id: number) {
+	async getUserProjectsById(id: number): Promise<Project[]> {
 		return this.prisma.project.findMany({
 			where: {
 				ownerId: id
@@ -41,5 +41,13 @@ export class ProjectsService {
 		})
 
 		return (!!projectName);
+	}
+
+	async getProjectById(id: number): Promise<Project | null> {
+		return this.prisma.project.findFirst({
+			where: {
+				id: id
+			}
+		})
 	}
 }
