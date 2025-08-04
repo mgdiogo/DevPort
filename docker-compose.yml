@@ -13,6 +13,19 @@ services:
     networks:
       - devport
 
+  frontend:
+    build:
+      context: ./devport-frontend
+    container_name: devport-frontend
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend
+    networks:
+      - devport
+    env_file:
+      - .env
+
   db:
     image: postgres:15
     container_name: devport-db
