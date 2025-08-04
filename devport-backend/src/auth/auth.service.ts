@@ -27,9 +27,6 @@ export class AuthService {
 			if (await this.emailTaken(createUserDto.email))
 				throw new ConflictException('Email is already registered');
 
-			if (await this.displayNameTaken(createUserDto.display_name))
-				throw new ConflictException('Display name is already taken');
-
 			const password = await hashPassword(createUserDto.password);
 			const createUser = { ...createUserDto, password };
 			return this.prisma.user.create({ data: createUser });
@@ -86,16 +83,6 @@ export class AuthService {
 		})
 
 		return (!!emailExists);
-	}
-
-	async displayNameTaken(display_name: string): Promise<Boolean> {
-		const nameExists = await this.prisma.user.findFirst({
-			where: {
-				display_name
-			}
-		})
-
-		return (!!nameExists);
 	}
 
 	async blacklistToken(token: string) {

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, IsEmail, IsNotEmpty, MinLength, MaxLength, IsStrongPassword } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, MaxLength, IsStrongPassword } from 'class-validator';
 
 export class CreateUserDto {
 	@ApiProperty({ example: 'user@mail.com' })
@@ -8,14 +8,6 @@ export class CreateUserDto {
 	@IsNotEmpty()
 	@Transform(({ value }) => value.trim().toLowerCase())
 	email: string;
-
-	@ApiProperty({ example: 'user' })
-	@IsString()
-	@IsNotEmpty()
-	@MinLength(4, { message: 'Display name must contain between 4 and 25 characters' })
-	@MaxLength(25, { message: 'Display name must contain between 4 and 25 characters' })
-	@Transform(({ value }) => value.trim())
-	display_name: string;
 
 	@ApiProperty({ example: 'StrongPass123!' })
 	@IsString()
@@ -29,7 +21,7 @@ export class CreateUserDto {
 	{ 
 		message: 'Password not strong enough' 
 	})
-	@MaxLength(25, { message: 'Password too long' })
+	@MaxLength(35, { message: 'Password too long' })
 	@IsNotEmpty()
 	password: string;
 }

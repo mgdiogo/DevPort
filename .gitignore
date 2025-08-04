@@ -22,6 +22,7 @@ yarn-error.log*
 
 # === OS files ===
 .DS_Store
+Thumbs.db
 
 # === Tests ===
 coverage/
@@ -29,3 +30,8 @@ coverage/
 
 # === Prisma generated ===
 **/prisma/generated/
+
+# === Next.js ===
+.next/
+out/
+coverage/

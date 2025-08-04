@@ -6,7 +6,7 @@ import * as cookieParser from 'cookie-parser';
 import { PrismaService } from 'prisma/prisma.service';
 import { AppModule } from './app.module';
 
-const PORT = process.env.JS_PORT!;
+const PORT = process.env.BACKEND_PORT!;
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
@@ -22,6 +22,10 @@ async function bootstrap() {
 		.build();
 	const document = SwaggerModule.createDocument(app, config);
 	SwaggerModule.setup('api/docs', app, document);
+	app.enableCors({
+		origin: process.env.FRONTEND_URL,
+		credentials: true
+	});
 	app.use(cookieParser());
 	await app.listen(PORT);
 }
